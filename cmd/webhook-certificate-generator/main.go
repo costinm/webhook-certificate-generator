@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/golang/glog"
-	"github.com/joelspeed/webhook-certificate-generator/pkg/certgenerator"
+	"github.com/costinm/webhook-certificate-generator/pkg/certgenerator"
 	"github.com/spf13/cobra"
 )
 

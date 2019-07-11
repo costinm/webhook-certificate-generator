@@ -8,6 +8,7 @@ import (
 	"encoding/asn1"
 	"encoding/pem"
 	"fmt"
+	"log"
 
 	"github.com/joelspeed/webhook-certificate-generator/pkg/utils"
 	certsv1beta1 "k8s.io/api/certificates/v1beta1"
@@ -17,11 +18,12 @@ import (
 )
 
 // createCerificateSigningRequest creates a Kubernetes CSR for the given service
-func createCerificateSigningRequest(client *kubernetes.Clientset, secret *v1.Secret, namespace string, serviceName string, secretName string) (string, error) {
-	csrPem, err := createCSRPem(secret, namespace, serviceName)
+func CreateCerificateSigningRequest(client *kubernetes.Clientset, secret *v1.Secret, namespace string, serviceName string, secretName string, isCA bool) (string, error) {
+	csrPem, err := createCSRPem(secret, namespace, serviceName, isCA)
 	if err != nil {
 		return "", fmt.Errorf("failed to create CSR Pem: %v", err)
 	}
+	log.Print("CSR:\n", string(csrPem))
 
 	csr := &certsv1beta1.CertificateSigningRequest{
 		ObjectMeta: metav1.ObjectMeta{
@@ -43,7 +45,7 @@ func createCerificateSigningRequest(client *kubernetes.Clientset, secret *v1.Sec
 	return csr.Name, nil
 }
 
-func createCSRPem(secret *v1.Secret, namespace string, serviceName string) ([]byte, error) {
+func createCSRPem(secret *v1.Secret, namespace string, serviceName string, isCA bool) ([]byte, error) {
 	privateKey, err := getPrivateKey(secret)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get private key: %v", err)
@@ -60,12 +62,12 @@ func createCSRPem(secret *v1.Secret, namespace string, serviceName string) ([]by
 		},
 	}
 
-	caExt, err := createCAExtension()
+	caExt, err := createCAExtension(isCA)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create CA Extension")
 	}
 
-	template.Extensions = []pkix.Extension{caExt}
+	template.ExtraExtensions = []pkix.Extension{caExt}
 
 	csr, err := x509.CreateCertificateRequest(rand.Reader, &template, privateKey)
 	if err != nil {
@@ -109,8 +111,8 @@ type BasicConstraints struct {
 	MaxPathLen int  `asn1:"optional,default:-1"`
 }
 
-func createCAExtension() (pkix.Extension, error) {
-	val, err := asn1.Marshal(BasicConstraints{false, 0})
+func createCAExtension(isCA bool) (pkix.Extension, error) {
+	val, err := asn1.Marshal(BasicConstraints{isCA, 0})
 	if err != nil {
 		return pkix.Extension{}, fmt.Errorf("failed to marshal basic constraints: %v", err)
 	}

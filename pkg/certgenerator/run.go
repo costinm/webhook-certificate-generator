@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/joelspeed/webhook-certificate-generator/pkg/utils"
+	"github.com/costinm/webhook-certificate-generator/pkg/utils"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 )
@@ -24,7 +24,7 @@ func Run(c *Config) error {
 	}
 
 	// Create Kubernetes CSR
-	csrName, err := createCerificateSigningRequest(client, secret, c.Namespace, c.ServiceName, c.SecretName)
+	csrName, err := CreateCerificateSigningRequest(client, secret, c.Namespace, c.ServiceName, "", false)
 	if err != nil {
 		return fmt.Errorf("couldn't create certificate signing request: %v", err)
 	}
@@ -51,7 +51,7 @@ func Run(c *Config) error {
 
 	// Wait for Certificate to be generated
 	glog.Infof("Waiting for Certificate...")
-	err = waitForCertificate(client, csrName)
+	err = WaitForCertificate(client, csrName)
 	if err != nil {
 		return fmt.Errorf("error waiting for Certificate: %v", err)
 	}
@@ -120,8 +120,8 @@ func waitForCSRApproval(client *kubernetes.Clientset, csrName string) error {
 	})
 }
 
-// waitForCertificate waits for the certificate to be ready
-func waitForCertificate(client *kubernetes.Clientset, csrName string) error {
+// WaitForCertificate waits for the certificate to be ready
+func WaitForCertificate(client *kubernetes.Clientset, csrName string) error {
 	return wait.PollImmediate(time.Second*10, time.Minute*10, func() (bool, error) {
 		csr, err := utils.GetCSR(client, csrName)
 		if err != nil {

@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"os"
 
 	"k8s.io/client-go/kubernetes"
 	// Import authentication plugins
@@ -22,8 +23,14 @@ func NewClientset(inCluster bool, kubeconfig string) (*kubernetes.Clientset, err
 }
 
 func createConfig(inCluster bool, kubeconfig string) (*rest.Config, error) {
-	if inCluster && kubeconfig == "" {
+	if inCluster && os.Getenv("KUBERNETES_SERVICE_HOST") != "" {
 		return rest.InClusterConfig()
+	}
+	if kubeconfig == "" {
+		kubeconfig = os.Getenv("KUBECONFIG")
+	}
+	if kubeconfig == "" {
+		kubeconfig = os.Getenv("HOME") + "/.kube/config"
 	}
 	clientConfigLoadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	clientConfigLoadingRules.ExplicitPath = kubeconfig
