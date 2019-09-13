@@ -1,3 +1,22 @@
+# Istio cert generator
+
+This is an alternative mechanism to generate Secrets or SDS secrets for Istio, using Apiserver
+to sign the certificates.
+
+Due to limitations in Apiserver, this can only generate DNS-based certificates. Istio supports
+DNS certificates using explicit configs - WIP to automate this.
+
+Certificates are generated with the following scheme:
+
+  SA.NS.svc.cluster.local
+  
+The rationale for this scheme: if you define a service account with the same name as a service, it will
+work without any custom configuration. 
+
+Note: Chiron component in Istio is supporting a similar capability, the cert-generation work in this repo can be merged there. Patching the webhooks in Istio is migrating to Operator and istioctl.
+
+Original Readme:
+
 # Webhook Certificate Generator
 Uses the Kubernetes CSR Api to create a Secret containing a private key and
 signed certificate.
